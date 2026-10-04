@@ -1,0 +1,79 @@
+SQL 
+
+sudo service postgresql start
+export DATABASE_URL="postgres://postgres:1@localhost:5432/tictactoe"
+sudo -u postgres psql
+\c tictactoe
+SELECT * FROM users;
+
+АВТОРИЗАЦИЯ 
+curl -i   -u valmerar1:123456   http://localhost:8080/games
+БЕЗ АВТОРИЗАЦИИ
+curl -i http://localhost:8080/games
+НЕВЕРНЫЙ ПАРОЛЬ
+curl -i   -u valmerar1:WRONG_PASSWORD   http://localhost:8080/games
+
+СОЗДАТЬ ИГРУ 
+curl -i -X POST   http://localhost:8080/game   -u valmerar1:123456
+коннет 2 пользователя
+curl -i -X POST http://localhost:8080/game/GAME_ID/join -u valmerar2:123456
+
+ХОД
+curl -i -X POST   http://localhost:8080/game/GAME_ID/move   -u valmerar1:123456   -H "Content-Type: application/json"   -d '{"row":0,"col":0}'
+
+================================================================================================================================
+
+Создать пользователя
+curl -i -X POST http://localhost:8080/signup \
+  -H "Content-Type: application/json" \
+  -d '{"login":"valmerar4","password":"123456"}'
+
+ЛОГИН Присвоить JWT в переменные
+RESP=$(curl -s -X POST http://localhost:8080/signin \
+  -H 'Content-Type: application/json' \
+  -d '{"login":"valmerar3","password":"123456"}')
+
+A=$(echo "$RESP" | jq -r '.accessToken')
+AR=$(echo "$RESP" | jq -r '.refreshToken')
+
+echo "A  = ${A:0:20}..."
+echo "AR = ${AR:0:20}..."
+
+Получить пользователя по токену
+curl -s http://localhost:8080/user \
+  -H "Authorization: Bearer $A"
+
+Проверяем refresh access token
+
+AA=$(curl -s -X POST http://localhost:8080/refresh-access-token \
+  -H 'Content-Type: application/json' \
+  -d "{\"refreshToken\":\"$AR\"}" | jq -r '.accessToken')
+
+echo "AA = ${AA:0:20}..."
+
+Получить историю игру игрока по JWT
+curl -s http://localhost:8080/history \
+  -H "Authorization: Bearer $A" | jq
+
+Посмотреть leaderboard через игрока с JWT 
+curl -i "http://localhost:8080/leaderboard?n=10" \
+  -H "Authorization: Bearer $AA" 
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+Получить JWT
+curl -s -X POST http://localhost:8080/signin \
+  -H "Content-Type: application/json" \
+  -d '{"login":"valmerar4","password":"123456"}'
+
+Проверяем refresh access token
+curl -s -X POST http://localhost:8080/refresh-access-token \
+  -H "Content-Type: application/json" \
+  -d "{\"refreshToken\":\"$REFRESH_TOKEN\"}"
+Причём refreshToken в этом ответе отсутствует — это соответствует реализации.
+
+Проверяем refresh refresh token
+curl -s -X POST http://localhost:8080/refresh-refresh-token \
+  -H "Content-Type: application/json" \
+  -d "{\"refreshToken\":\"$REFRESH_TOKEN\"}"
